@@ -499,6 +499,10 @@ end
 --------------------------------------------------
 -- functions here
 --------------------------------------------------
+
+----------------------------------------------------------------
+-- Simple button that does it's callback on click
+---------------------------------------------------------------- 
 function bdCore:createActionButton(group, option, info, persistent)
 	local panel = cfg.config[group].lastpanel
 	local create = CreateFrame("Button",nil,panel, "UIPanelButtonTemplate")
@@ -523,6 +527,11 @@ function bdCore:createActionButton(group, option, info, persistent)
 
 	panel.lastFrame = container
 end
+
+
+----------------------------------------------------------------
+-- Text box and button, for typing and then callback on submitting
+---------------------------------------------------------------- 
 function bdCore:createBox(group, option, info, persistent)
 	local panel = cfg.config[group].lastpanel
 	local create = CreateFrame("EditBox",nil,panel)
@@ -569,6 +578,10 @@ function bdCore:createBox(group, option, info, persistent)
 	return create
 end
 
+
+----------------------------------------------------------------
+-- Color picker with preview box
+---------------------------------------------------------------- 
 function bdCore:colorPicker(group, option, info, persistent)
 	local panel = cfg.config[group].lastpanel
 	
@@ -672,9 +685,10 @@ function bdCore:createText(group, info)
 	return text
 end
 
+----------------------------------------------------------------
+-- Complex List, this will be extended to provide detailed customization of each value
+---------------------------------------------------------------- 
 function bdCore:createList(group, option, info, persistent)
-	--local panels = cfg.config[group]
-	--local panel = cfg.config[group].lastcontent
 	local panel = cfg.config[group].lastpanel
 	
 	local container = CreateFrame("frame",nil,panel)
@@ -689,7 +703,7 @@ function bdCore:createList(group, option, info, persistent)
 	panel.lastFrame = container
 	panel.lastFrame.type = "list"
 	
-	--scrollframe 
+	--scrollframe
 	local scrollframe = CreateFrame("ScrollFrame", nil, container) 
 	scrollframe:SetPoint("TOPRIGHT", container, "TOPRIGHT", 0, -6) 
 	scrollframe:SetSize(container:GetWidth(), container:GetHeight()-12) 
@@ -714,28 +728,123 @@ function bdCore:createList(group, option, info, persistent)
 	container.content:SetSize(container:GetWidth(), container:GetHeight()) 
 	scrollframe.content = container.content 
 	scrollframe:SetScrollChild(container.content)
+
+
+	-- / positioning and creation done
+
+	-- Filter / Create box
+	container.filter = CreateFrame("EditBox",nil,container)
+	container.filter:SetPoint("BOTTOMLEFT", container, "TOPLEFT",0,2)
+	container.filter:SetSize(configdims.rightwidth-66, 24)
+	bdCore:setBackdrop(container.filter)
+	container.filter.background:SetVertexColor(.10,.14,.17,1)
+	container.filter:SetFont(media.font,12)
+	container.filter:SetTextInsets(6, 2, 2, 2)
+	container.filter:SetMaxLetters(200)
+	container.filter:SetHistoryLines(1000)
+	container.filter:SetAutoFocus(false) 
+	container.filter:SetScript("OnKeyDown", function(self, key) container.leftcol:populate_filter(self:GetText()) end)
+	container.filter:SetScript("OnEnterPressed", function(self, key) self:ClearFocus(); container.leftcol:populate_filter(self:GetText()) end)
+	container.filter:SetScript("OnEscapePressed", function(self, key) self:ClearFocus(); container.leftcol:populate_filter(self:GetText()) end)
 	
-	container.content.text = container.content:CreateFontString(nil)
-	container.content.text:SetFont(media.font,12)
-	container.content.text:SetPoint("TOPLEFT",container.content,"TOPLEFT",5,0)
-	container.content.text:SetHeight(600)
-	container.content.text:SetWidth(container:GetWidth()-10)
-	container.content.text:SetJustifyH("LEFT")
-	container.content.text:SetJustifyV("TOP")
-	
-	
-	container.insert = CreateFrame("EditBox",nil,container)
-	container.insert:SetPoint("BOTTOMLEFT", container, "TOPLEFT",0,2)
-	container.insert:SetSize(configdims.rightwidth-66, 24)
-	bdCore:setBackdrop(container.insert)
-	container.insert.background:SetVertexColor(.10,.14,.17,1)
-	container.insert:SetFont(media.font,12)
-	container.insert:SetTextInsets(6, 2, 2, 2)
-	container.insert:SetMaxLetters(200)
-	container.insert:SetHistoryLines(1000)
-	container.insert:SetAutoFocus(false) 
-	container.insert:SetScript("OnEnterPressed", function(self, key) container.button:Click() end)
-	container.insert:SetScript("OnEscapePressed", function(self, key) self:ClearFocus() end)
+
+	-- info[detail] = {}
+	container.leftcol = CreateFrame("frame", nil, container.content)
+	container.leftcol:SetHeight(600)
+	container.leftcol:SetWidth(container:GetWidth() / 2)
+	container.leftcol:SetPoint("TOPLEFT",container.content,"TOPLEFT",5,0)
+	container.frames = {}
+
+	function container.leftcol:populate_filter(filter)
+		local lines = {}
+		if (info.persistent or persistent) then
+			for k, v in pairs(c.persistent[group][option]) do
+				lines[group] = lines[group] or {}
+				lines[group][option] = lines[group][option] or {}
+				lines[group][option][k] = c.persistent[group][option]
+			end
+		else
+			for k, v in pairs(c.profile[group][option]) do
+				lines[group] = lines[group] or {}
+				lines[group][option] = lines[group][option] or {}
+				lines[group][option][k] = c.profile[group][option]
+			end
+		end
+
+		local index = 1
+		local lastframe = nil
+		for sgroup, soption in pairs(lines) do
+			for svalue, tf in pairs(lines) do
+				local frame = container.frames[index] or CreateFrame("button", nil, container.leftcol)
+				frame:ClearAllPoints()
+				if (not lastframe) then
+					frame:SetPoint("TOPLEFT", container.leftcol)
+					frame:SetPoint("TOPRIGHT", container.leftcol)
+				else
+					frame:SetPoint("TOPLEFT", lastframe, "BOTTOMLEFT")
+					frame:SetPoint("TOPRIGHT", lastframe, "BOTTOMRIGHT")
+				end
+				frame:SetHeight(24)
+				
+				frame.text = frame.text or frame:CreateFontString(nil)
+				frame.text:SetFont(bdCore.media.font, 12)
+				frame.text:SetText(k)
+				frame.text:SetPoint("LEFT", frame, "LEFT", 4, 0)
+				frame.text:SetPoint("RIGHT", frame, "RIGHT", -4, 0)
+				frame.text:SetJustifyH("CENTER")
+				frame.text:SetJustifyV("MIDDLE")
+
+				frame:SetScript("OnClick", function()
+					container.rightcol:populate_details()
+				end)
+
+				container.frames[index] = frame
+				index = index + 1
+			end
+		end
+
+
+	end
+
+	container.rightcol = CreateFrame("frame", nil, container.content)
+	container.rightcol:SetHeight(600)
+	container.rightcol:SetWidth(container:GetWidth() / 2)
+	container.rightcol:SetPoint("TOPRIGHT",container.content,"TOPRIGHT",-5,0)
+	container.rightcol:SetBackdrop({bgFile = bdCore.media.flat})
+	container.rightcol:SetBackdropColor(0,0,0,.1)
+
+	-- instructional
+	container.rightcol.text = container.rightcol:CreateFontString(nil)
+	container.rightcol.text:SetFont(bdCore.media.font, 13)
+	container.rightcol.text:SetText("Select a value from the left to configure details.")
+	container.rightcol.text:SetAllPoints()
+	container.rightcol.text:SetJustifyH("CENTER")
+	container.rightcol.text:SetJustifyV("MIDDLE")
+
+	-- rightcol modules
+	container.rightcol.title = CreateFrame("EditBox",nil,container.rightcol)
+	container.rightcol.title:SetPoint("TOPLEFT", container.rightcol, "TOPLEFT", 2, -2)
+	container.rightcol.title:SetPoint("BOTTOMRIGHT", container.rightcol, "TOPRIGHT", -2, -22)
+	bdCore:setBackdrop(container.rightcol.title)
+	container.rightcol.title.background:SetVertexColor(.10,.14,.17,1)
+	container.rightcol.title:SetFont(bdCore.media.font, 12)
+	container.rightcol.title:SetTextInsets(6, 2, 2, 2)
+	container.rightcol.title:SetMaxLetters(200)
+	container.rightcol.title:SetHistoryLines(1000)
+	container.rightcol.title:SetAutoFocus(false)
+
+
+
+	-- rightcol buttons
+	container.rightcol.save = CreateFrame("Button", nil, container.rightcol, "UIPanelButtonTemplate")
+	bdCore:skinButton(container.rightcol.save, false, "blue")
+	container.rightcol.save:SetPoint("BOTTOMRIGHT", container.rightcol, "BOTTOMRIGHT", -4, 4)
+	container.rightcol.save:SetText("Save")
+
+	container.rightcol.delete = CreateFrame("Button", nil, container.rightcol, "UIPanelButtonTemplate")
+	bdCore:skinButton(container.rightcol.delete, false, "red")
+	container.rightcol.delete:SetPoint("BOTTOMLEFT", container.rightcol, "BOTTOMLEFT", 4, 4)
+	container.rightcol.delete:SetText("Delete")
 	
 	-- submit
 	container.button = CreateFrame("Button", nil, container)
@@ -862,6 +971,9 @@ function bdCore:createList(group, option, info, persistent)
 	end
 end
 
+----------------------------------------------------------------
+-- Custom dropdown, passed a table for options i.e. {'Option 1', 'Option 2'}
+---------------------------------------------------------------- 
 function bdCore:createDropdown(group, option, info, custompanel, persistent)
 	--local panels = cfg.config[group]
 	--local panel = cfg.config[group].lastcontent
@@ -992,6 +1104,9 @@ function bdCore:createDropdown(group, option, info, custompanel, persistent)
 	return dropdown
 end
 
+----------------------------------------------------------------
+-- Slider with min, max, and step values
+---------------------------------------------------------------- 
 function bdCore:createSlider(group, option, info, persistent)
 	--local panels = cfg.config[group]
 	--local panel = cfg.config[group].lastcontent
@@ -1068,6 +1183,10 @@ function bdCore:createSlider(group, option, info, persistent)
 	return slider
 end
 
+
+----------------------------------------------------------------
+-- Simple true/false checkbox
+---------------------------------------------------------------- 
 function bdCore:createCheckButton(group, option, info, persistent)
 	--local panels = cfg.config[group]
 	--local panel = cfg.config[group].lastcontent

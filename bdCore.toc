@@ -28,7 +28,8 @@ media.lua
 api.lua
 auras.lua
 config\defaults.lua
-config\config.lua
+#config\config.lua
+config\config_new.lua
 profiles.lua
 loading.lua
 
