@@ -1,5 +1,74 @@
 local bdCore, c, f = select(2, ...):unpack()
 
+----------------------------------------------
+-- Configuration Frames
+----------------------------------------------
+local function CreateText(parentframe, hjust, vjust)
+	if not hjust then hjust = "LEFT" end
+	if not vjust then vjust = "MIDDLE" end
+
+	local text = parentframe:CreateFontString(nil)
+	text:SetFont(bdCore.media.font, 14)
+	text:SetJustifyH(hjust)
+	text:SetJustifyV(vjust)
+	text:SetTextColor(1, 1, 1, 1)
+	text:SetAllPoints()
+
+	return text
+end
+
+local function CreateButton(parentframe, color)
+	local button = CreateFrame("button", nil, parentframe, "UIPanelButtonTemplate")
+	local f = button
+
+	local colors = bdCore.media.backdrop
+	local hovercolors = {0,0.55,.85,1}
+	if (color == "red") then
+		colors = {.6,.1,.1,0.6}
+		hovercolors = {.6,.1,.1,1}
+	elseif (color == "blue") then
+		colors = {0,0.55,.85,0.6}
+		hovercolors = {0,0.55,.85,1}
+	elseif (color == "dark") then
+		colors = bdCore.backdrop
+		hovercolors = {.1,.1,.1,1}
+	elseif (bdCore.media[color]) then
+		colors = bdCore.media[color]
+		hovercolors = bdCore.media[color]
+	end
+
+	f:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 2, insets = {left=2,top=2,right=2,bottom=2}})
+	f:SetBackdropColor(unpack(colors)) 
+    f:SetBackdropBorderColor(unpack(bdCore.media.border))
+    f:SetNormalFontObject("bdCore.font")
+	f:SetHighlightFontObject("bdCore.font")
+	f:SetPushedTextOffset(0,-1)
+	-- f:SetJustifyH("CENTER")
+	-- f:SetJustifyV("MIDDLE")
+	f:SetSize(f:GetTextWidth()+16,24)
+	
+	f:HookScript("OnEnter", function(f) 
+		f:SetBackdropColor(unpack(hovercolors)) 
+	end)
+	f:HookScript("OnLeave", function(f) 
+		f:SetBackdropColor(unpack(colors)) 
+	end)
+
+	return button
+end
+
+local function CreateCheckbox()
+
+end
+
+local function CreateDropdown()
+
+end
+
+local function CreateDetailList()
+
+end
+
 
 ----------------------------------------------
 -- Configuration Window
@@ -200,70 +269,3 @@ function bdCore:addModule(name, configurations, persistent, callback)
 	end
 end
 
-----------------------------------------------
--- Configuration Frames
-----------------------------------------------
-local function CreateText(parentframe, hjust, vjust)
-	if not hjust then hjust = "LEFT" end
-	if not vjust then vjust = "MIDDLE" end
-
-	local text = parentframe:CreateFontString(nil)
-	text:SetFont(bdCore.media.font, 14)
-	text:SetJustifyH(hjust)
-	text:SetJustifyV(vjust)
-	text:SetTextColor(1, 1, 1, 1)
-	text:SetAllPoints()
-
-	return text
-end
-
-local function CreateButton(parentframe, color)
-	local button = CreateFrame("button", nil, parentframe, "UIPanelButtonTemplate")
-
-	local colors = bdCore.media.backdrop
-	local hovercolors = {0,0.55,.85,1}
-	if (color == "red") then
-		colors = {.6,.1,.1,0.6}
-		hovercolors = {.6,.1,.1,1}
-	elseif (color == "blue") then
-		colors = {0,0.55,.85,0.6}
-		hovercolors = {0,0.55,.85,1}
-	elseif (color == "dark") then
-		colors = bdCore.backdrop
-		hovercolors = {.1,.1,.1,1}
-	elseif (bdCore.media[color]) then
-		colors = bdCore.media[color]
-		hovercolors = bdCore.media[color]
-	end
-
-	f:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8x8", edgeFile = "Interface\\Buttons\\WHITE8x8", edgeSize = 2, insets = {left=2,top=2,right=2,bottom=2}})
-	f:SetBackdropColor(unpack(colors)) 
-    f:SetBackdropBorderColor(unpack(bdCore.media.border))
-    f:SetNormalFontObject("bdCore.font")
-	f:SetHighlightFontObject("bdCore.font")
-	f:SetPushedTextOffset(0,-1)
-	f:SetJustifyH("CENTER")
-	f:SetJustifyV("MIDDLE")
-	f:SetSize(f:GetTextWidth()+16,24)
-	
-	f:HookScript("OnEnter", function(f) 
-		f:SetBackdropColor(unpack(hovercolors)) 
-	end)
-	f:HookScript("OnLeave", function(f) 
-		f:SetBackdropColor(unpack(colors)) 
-	end)
-
-	return button
-end
-
-local function CreateCheckbox()
-
-end
-
-local function CreateDropdown()
-
-end
-
-local function CreateDetailList()
-
-end
