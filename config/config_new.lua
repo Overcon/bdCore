@@ -77,13 +77,16 @@ local sizes = {
 	left = 200
 	, right = 600
 	, height = 500
-	, header_height = 100
-	, tab_height = 100
+	, header_height = 30
+	, tab_height = 24
 }
 
 local cfg = CreateFrame("frame", "bdCore Config", UIParent)
 cfg:SetSize(sizes.left + sizes.right, sizes.height)
 cfg:SetPoint("CENTER")
+cfg:SetMovable(true)
+cfg:SetUserPlaced(true)
+cfg:SetClampedToScreen(true)
 cfg:SetBackdrop({bgFile = bdCore.media.flat})
 cfg:SetBackdropColor(unpack(bdCore.media.backdrop))
 
@@ -210,9 +213,9 @@ function cfg:addTab(panel, name)
 	-- position tab
 	if (not panel.last_tab) then
 		tab:SetPoint("LEFT", panel.tab_container, "LEFT", 4, 0)
-		panel.tab_container.last_tab = tab
+		panel.last_tab = tab
 	else
-		tab:SetPoint("LEFT", panel.tab_container.last_tab, "RIGHT", 2, 0)
+		tab:SetPoint("LEFT", panel.last_tab, "RIGHT", 2, 0)
 	end
 
 	local content = CreateFrame("frame", nil, panel)
@@ -236,7 +239,7 @@ function cfg:addTab(panel, name)
 	content.content:SetSize(content:GetWidth(), content:GetHeight())
 
 	--cfg.panel[name] = panel
-	return tab, content
+	return tab, content.content
 end
 
 cfg.nav = {}
@@ -259,10 +262,46 @@ function bdCore:addModule(name, configurations, persistent, callback)
 	if (not configurations) then print("bdConfig for"..name.."is missing configuration array"); return end
 	for k, config in pairs(configurations) do
 		local tab_started = false
-		for option, info in pairs(conf) do
+		for option, info in pairs(config) do
 			if (not tab_started and not info.type == "tab") then
 				-- we haven't started a tab yet, let's just make one for ease
-				local content, tab = panel:addTab("General")
+				local tab, content = panel:addTab("General")
+			end
+
+			-- check where to store this. either in the account-wide persistent data, or in the profile
+			if (persistent or info.persistent) then
+				c.persistent[name] = c.persistent[name] or {}
+				if (c.persistent[name][option] == nil) then
+					if (info.value == nil) then
+						info.value = {}
+					end
+					c.persistent[name][option] = info.value
+				end
+			else
+				c.profile[name] = c.profile[name] or {}
+				if (c.profile[name][option] == nil) then
+					if (info.value == nil) then
+						info.value = {}
+					end
+					c.profile[name][option] = info.value
+				end
+			end
+
+			-- create the configuration frame here
+			if (info.type == "tab") then
+			elseif (info.type == "slider") then
+			elseif (info.type == "checkbox") then
+			elseif (info.type == "dropdown") then
+			elseif (info.type == "list") then
+			elseif (info.type == "createbox") then
+			elseif (info.type == "actionbutton") then
+			elseif (info.type == "color") then
+			end
+
+			-- hide tabs if we're not actually using anything other than General
+			if (panel.last_tab:GetText() == "General") then
+				panel.tab_container:Hide()
+				panel:SetPoint("TOPRIGHT", cfg.right, "TOPRIGHT", 0, 0)
 			end
 		end
 
