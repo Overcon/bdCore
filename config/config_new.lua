@@ -30,9 +30,9 @@ local function CreateButton(parentframe, color)
 		colors = {0,0.55,.85,0.6}
 		hovercolors = {0,0.55,.85,1}
 	elseif (color == "dark") then
-		colors = bdCore.backdrop
+		colors = bdCore.media.backdrop
 		hovercolors = {.1,.1,.1,1}
-	elseif (bdCore.media[color]) then
+	elseif (color and bdCore.media[color]) then
 		colors = bdCore.media[color]
 		hovercolors = bdCore.media[color]
 	end
@@ -133,12 +133,12 @@ cfg.right:SetBackdropColor(0,0,0,.1)
 -- Configuration Functions
 ----------------------------------------------
 local lastnav = nil
-function cfg:addNavigation()
+function cfg:addNavigation(name)
 	local nav = CreateFrame("Button", nil, cfg.left)
 	nav.name = name
 	nav:SetWidth(sizes.left)
 	nav:SetHeight(20)
-	nav:SetBackdrop({bgFile = media.flat})
+	nav:SetBackdrop({bgFile = bdCore.media.flat})
 	nav:SetBackdropColor(0,0,0,0)
 	nav:SetScript("OnEnter", function(self)
 		if self.active then return end
@@ -188,15 +188,16 @@ function cfg:addNavigation()
 		end
 
 		self.active = true
-		self:SetBackdropColor(unpack(media.red))
+		self:SetBackdropColor(unpack(bdCore.media.red))
 	end)
 
 	cfg.nav[name] = nav
-
+	lastnav = nav
 	return nav
 end
 
 function cfg:addTab(panel, name)
+	print("adding tab")
 	local tab = CreateButton(panel.tab_container, 'dark')
 	tab:SetAlpha(0.6)
 	tab:SetText(name)
@@ -213,7 +214,6 @@ function cfg:addTab(panel, name)
 	-- position tab
 	if (not panel.last_tab) then
 		tab:SetPoint("LEFT", panel.tab_container, "LEFT", 4, 0)
-		panel.last_tab = tab
 	else
 		tab:SetPoint("LEFT", panel.last_tab, "RIGHT", 2, 0)
 	end
@@ -233,18 +233,24 @@ function cfg:addTab(panel, name)
 	content.scrollbar:SetValue(0) 
 	content.scrollbar:SetWidth(16) 
 	content.scrollbar:SetScript("OnValueChanged", function (self, value) self:GetParent():SetVerticalScroll(value) self:SetValue(value) end) 
-	content.scrollbar:SetBackdrop({bgFile = media.flat})
+	content.scrollbar:SetBackdrop({bgFile = bdCore.media.flat})
 	content.scrollbar:SetBackdropColor(0,0,0,.2)
 	content.content = CreateFrame("Frame", nil, content.scrollframe) 
 	content.content:SetSize(content:GetWidth(), content:GetHeight())
 
 	--cfg.panel[name] = panel
+	panel.last_tab = tab
+	panel.tabs = panel.tabs or {}
+	panel.tabs[name] = tab
 	return tab, content.content
 end
 
 cfg.nav = {}
 cfg.panels = {}
+bdCore.modules = {}
 function bdCore:addModule(name, configurations, persistent, callback)
+	-- used to say whether or not config has been initiated for name
+	bdCore.modules[name] = true
 	-- add leftside navigation item
 	local nav = cfg:addNavigation(name)
 
@@ -261,11 +267,14 @@ function bdCore:addModule(name, configurations, persistent, callback)
 	-- now lets start adding configuration
 	if (not configurations) then print("bdConfig for"..name.."is missing configuration array"); return end
 	for k, config in pairs(configurations) do
+		print(k, config)
 		local tab_started = false
 		for option, info in pairs(config) do
-			if (not tab_started and not info.type == "tab") then
+			print(option, info, info.type)
+			if (not tab_started and info.type ~= "tab") then
 				-- we haven't started a tab yet, let's just make one for ease
-				local tab, content = panel:addTab("General")
+				tab_started = true
+				local tab, content = cfg:addTab(panel, "General")
 			end
 
 			-- check where to store this. either in the account-wide persistent data, or in the profile
@@ -289,6 +298,7 @@ function bdCore:addModule(name, configurations, persistent, callback)
 
 			-- create the configuration frame here
 			if (info.type == "tab") then
+				local tab, content = cfg:addTab(panel, info.name)
 			elseif (info.type == "slider") then
 			elseif (info.type == "checkbox") then
 			elseif (info.type == "dropdown") then
